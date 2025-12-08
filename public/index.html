@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messenger - Real-time Chat & Calls</title>
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+  <!-- Login/Register Container -->
+  <div id="auth-container" class="auth-container">
+    <div class="auth-box">
+      <h1 class="app-title">Messenger</h1>
+      
+      <!-- Login Form -->
+      <div id="login-form" class="auth-form active">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <input type="text" id="login-username" placeholder="Username" required>
+          </div>
+          <div class="form-group">
+            <input type="password" id="login-password" placeholder="Password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+        <p class="auth-switch">
+          Don't have an account? 
+          <a href="#" id="show-register">Register</a>
+        </p>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="auth-form">
+        <h2>Register</h2>
+        <form id="registerForm">
+          <div class="form-group">
+            <input type="text" id="register-username" placeholder="Username" required>
+          </div>
+          <div class="form-group">
+            <input type="email" id="register-email" placeholder="Email" required>
+          </div>
+          <div class="form-group">
+            <input type="password" id="register-password" placeholder="Password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+        <p class="auth-switch">
+          Already have an account? 
+          <a href="#" id="show-login">Login</a>
+        </p>
+      </div>
+
+      <div id="auth-error" class="error-message"></div>
+    </div>
+  </div>
+
+  <!-- Main Chat Container -->
+  <div id="chat-container" class="chat-container hidden">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Messages</h2>
+        <div class="user-info">
+          <span id="current-username" class="username"></span>
+          <button id="logout-btn" class="btn-icon" title="Logout">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="search-users" placeholder="Search users...">
+      </div>
+      <div id="users-list" class="users-list">
+        <!-- User list will be populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area">
+      <div id="no-chat-selected" class="no-chat">
+        <h2>Welcome to Messenger</h2>
+        <p>Select a user to start chatting</p>
+      </div>
+
+      <div id="chat-window" class="chat-window hidden">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="chat-user-info">
+            <div class="user-avatar">
+              <span id="chat-username-initial"></span>
+            </div>
+            <div>
+              <h3 id="chat-username"></h3>
+              <span id="chat-user-status" class="status"></span>
+            </div>
+          </div>
+          <div class="call-buttons">
+            <button id="voice-call-btn" class="btn-icon" title="Voice Call">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+              </svg>
+            </button>
+            <button id="video-call-btn" class="btn-icon" title="Video Call">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messages-area" class="messages-area">
+          <!-- Messages will be displayed here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" class="typing-indicator hidden">
+          <span></span> is typing...
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input-container">
+          <form id="message-form">
+            <input 
+              type="text" 
+              id="message-input" 
+              placeholder="Type a message..." 
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-send">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call Modal -->
+  <div id="call-modal" class="modal hidden">
+    <div class="modal-content call-modal">
+      <div id="incoming-call" class="call-screen hidden">
+        <h2>Incoming Call</h2>
+        <div class="caller-info">
+          <div class="caller-avatar">
+            <span id="caller-initial"></span>
+          </div>
+          <h3 id="caller-name"></h3>
+          <p id="call-type-label"></p>
+        </div>
+        <div class="call-actions">
+          <button id="accept-call-btn" class="btn btn-success">Accept</button>
+          <button id="reject-call-btn" class="btn btn-danger">Reject</button>
+        </div>
+      </div>
+
+      <div id="active-call" class="call-screen hidden">
+        <h2 id="active-call-title">Call in Progress</h2>
+        <div class="video-container">
+          <video id="remote-video" autoplay playsinline></video>
+          <video id="local-video" autoplay playsinline muted></video>
+        </div>
+        <div class="call-info">
+          <h3 id="active-caller-name"></h3>
+          <span id="call-duration">00:00</span>
+        </div>
+        <div class="call-controls">
+          <button id="toggle-audio-btn" class="btn-control" title="Mute">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+            </svg>
+          </button>
+          <button id="toggle-video-btn" class="btn-control" title="Hide Video">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </button>
+          <button id="end-call-btn" class="btn-control btn-end-call" title="End Call">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="outgoing-call" class="call-screen hidden">
+        <h2>Calling...</h2>
+        <div class="caller-info">
+          <div class="caller-avatar">
+            <span id="outgoing-caller-initial"></span>
+          </div>
+          <h3 id="outgoing-caller-name"></h3>
+          <p id="outgoing-call-type-label"></p>
+        </div>
+        <div class="call-actions">
+          <button id="cancel-call-btn" class="btn btn-danger">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/scripts/app.js"></script>
+</body>
+</html>
