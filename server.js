@@ -59,6 +59,10 @@ wss.on('connection', (ws, req) => {
             
             // Send list of online users
             sendOnlineUsers(ws);
+
+            // Send list of groups
+            const groupController = require('./controllers/groupController');
+            await groupController.handleGetGroups(userId, ws);
             
           } catch (error) {
             ws.send(JSON.stringify({
@@ -74,6 +78,30 @@ wss.on('connection', (ws, req) => {
           if (userId) {
             const messageController = require('./controllers/messageController');
             await messageController.handleMessage(data, userId, username, clients);
+          }
+          break;
+
+        case 'create_group':
+          // Handle group creation
+          if (userId) {
+            const groupController = require('./controllers/groupController');
+            await groupController.handleCreateGroup(data, userId, username, clients);
+          }
+          break;
+
+        case 'group_message':
+          // Handle group message
+          if (userId) {
+            const groupController = require('./controllers/groupController');
+            await groupController.handleGroupMessage(data, userId, username, clients);
+          }
+          break;
+
+        case 'get_group_messages':
+          // Handle getting group messages
+          if (userId) {
+            const groupController = require('./controllers/groupController');
+            await groupController.handleGetGroupMessages(data, userId, ws);
           }
           break;
 

@@ -61,6 +61,13 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>Messages</h2>
+        <button id="create-group-btn" class="btn-icon" title="Create Group" style="margin-left: 10px; cursor: pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+        </button>
         <div class="user-info">
           <span id="current-username" class="username"></span>
           <button id="logout-btn" class="btn-icon" title="Logout">
@@ -74,6 +81,9 @@
       </div>
       <div class="search-container">
         <input type="text" id="search-users" placeholder="Search users...">
+      </div>
+      <div id="groups-list" class="users-list" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+        <!-- Group list will be populated dynamically -->
       </div>
       <div id="users-list" class="users-list">
         <!-- User list will be populated dynamically -->
@@ -207,6 +217,28 @@
           <button id="cancel-call-btn" class="btn btn-danger">Cancel</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Create Group Modal -->
+  <div id="create-group-modal" class="modal hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+    <div class="modal-content" style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Create Group</h2>
+        <span class="close-modal" id="close-group-modal" style="cursor: pointer; font-size: 24px;">&times;</span>
+      </div>
+      <form id="create-group-form">
+        <div class="form-group" style="margin-bottom: 15px;">
+          <input type="text" id="group-name" placeholder="Group Name" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Select Members:</label>
+          <div id="group-members-selection" class="members-selection" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+            <!-- Checkboxes for users -->
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Create Group</button>
+      </form>
     </div>
   </div>
 

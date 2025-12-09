@@ -6,6 +6,8 @@ let selectedUser = null;
 let allUsers = [];
 let onlineUsers = new Set();
 let messages = {};
+let groups = [];
+let selectedGroup = null;
 
 // WebRTC variables
 let peerConnection = null;
@@ -114,6 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('end-call-btn').addEventListener('click', endCall);
   document.getElementById('toggle-audio-btn').addEventListener('click', toggleAudio);
   document.getElementById('toggle-video-btn').addEventListener('click', toggleVideo);
+
+  // Group modal
+  const createGroupBtn = document.getElementById('create-group-btn');
+  const createGroupModal = document.getElementById('create-group-modal');
+  const closeGroupModal = document.getElementById('close-group-modal');
+  const createGroupForm = document.getElementById('create-group-form');
+
+  if (createGroupBtn) {
+    createGroupBtn.addEventListener('click', () => {
+      createGroupModal.classList.remove('hidden');
+      populateGroupMembersSelection();
+    });
+  }
+
+  if (closeGroupModal) {
+    closeGroupModal.addEventListener('click', () => {
+      createGroupModal.classList.add('hidden');
+    });
+  }
+
+  if (createGroupForm) {
+    createGroupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      createGroup();
+    });
+  }
 });
 
 // Authentication functions
@@ -203,6 +231,49 @@ function logout() {
   registerForm.reset();
 }
 
+function populateGroupMembersSelection() {
+  const container = document.getElementById('group-members-selection');
+  container.innerHTML = '';
+  
+  allUsers.forEach(user => {
+    if (user.userId !== currentUser.userId) {
+      const div = document.createElement('div');
+      div.style.marginBottom = '5px';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = user.userId;
+      checkbox.id = `user-${user.userId}`;
+      
+      const label = document.createElement('label');
+      label.htmlFor = `user-${user.userId}`;
+      label.textContent = user.username;
+      label.style.marginLeft = '5px';
+      
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      container.appendChild(div);
+    }
+  });
+}
+
+function createGroup() {
+  const name = document.getElementById('group-name').value;
+  const checkboxes = document.querySelectorAll('#group-members-selection input[type="checkbox"]:checked');
+  const members = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (name && members.length > 0) {
+    ws.send(JSON.stringify({
+      type: 'create_group',
+      name: name,
+      members: members
+    }));
+    
+    document.getElementById('create-group-modal').classList.add('hidden');
+    document.getElementById('group-name').value = '';
+  }
+}
+
 function showChat() {
   authContainer.classList.add('hidden');
   chatContainer.classList.remove('hidden');
@@ -276,6 +347,26 @@ function handleWebSocketMessage(data) {
 
     case 'message_sent':
       receiveMessage(data.message);
+      break;
+
+    case 'group_list':
+      groups = data.groups;
+      updateGroupsList();
+      break;
+
+    case 'group_created':
+      groups.push(data.group);
+      updateGroupsList();
+      break;
+
+    case 'group_message':
+      receiveGroupMessage(data.message, data.groupName);
+      break;
+
+    case 'group_message_history':
+      if (selectedGroup && selectedGroup.groupId === data.groupId) {
+        loadMessageHistory(data.messages, null, true);
+      }
       break;
 
     case 'message_history':
@@ -366,9 +457,73 @@ function updateUsersList() {
 
 function selectUser(user) {
   selectedUser = user;
+  selectedGroup = null;
   updateUsersList();
+  updateGroupsList();
   showChatWindow(user);
+  
+  // Show call buttons
+  const chatActions = document.querySelector('.chat-actions');
+  if (chatActions) chatActions.style.display = 'flex';
+  
   loadChatMessages(user.userId);
+}
+
+function updateGroupsList() {
+  const groupsList = document.getElementById('groups-list');
+  if (!groupsList) return;
+  groupsList.innerHTML = '';
+
+  groups.forEach(group => {
+    const groupItem = document.createElement('div');
+    groupItem.className = 'user-item';
+    if (selectedGroup && selectedGroup.groupId === group.groupId) {
+      groupItem.classList.add('active');
+    }
+
+    const initial = group.name.charAt(0).toUpperCase();
+
+    groupItem.innerHTML = `
+      <div class="user-avatar" style="background-color: #764ba2;">
+        <span>${initial}</span>
+      </div>
+      <div class="user-details">
+        <div class="user-name">${group.name}</div>
+        <div class="status">${group.members.length} members</div>
+      </div>
+    `;
+
+    groupItem.addEventListener('click', () => selectGroup(group));
+    groupsList.appendChild(groupItem);
+  });
+}
+
+function selectGroup(group) {
+  selectedGroup = group;
+  selectedUser = null;
+  
+  updateUsersList();
+  updateGroupsList();
+  
+  document.getElementById('no-chat-selected').classList.add('hidden');
+  document.getElementById('chat-window').classList.remove('hidden');
+  
+  document.getElementById('chat-username').textContent = group.name;
+  document.getElementById('chat-user-status').textContent = `${group.members.length} members`;
+  document.getElementById('chat-username-initial').textContent = group.name.charAt(0).toUpperCase();
+  
+  // Hide call buttons for groups
+  const chatActions = document.querySelector('.chat-actions');
+  if (chatActions) chatActions.style.display = 'none';
+  
+  // Clear messages
+  document.getElementById('messages-area').innerHTML = '';
+  
+  // Request message history
+  ws.send(JSON.stringify({
+    type: 'get_group_messages',
+    groupId: group.groupId
+  }));
 }
 
 function showChatWindow(user) {
@@ -417,18 +572,24 @@ function loadChatMessages(userId) {
   }
 }
 
-function loadMessageHistory(msgs, otherUserId) {
-  if (!messages[otherUserId]) {
-    messages[otherUserId] = [];
+function loadMessageHistory(msgs, otherUserId, isGroup = false) {
+  if (isGroup) {
+    const messagesArea = document.getElementById('messages-area');
+    messagesArea.innerHTML = '';
+    msgs.forEach(msg => displayMessage(msg));
+  } else {
+    if (!messages[otherUserId]) {
+      messages[otherUserId] = [];
+    }
+    messages[otherUserId] = msgs;
+    displayMessages();
   }
-  messages[otherUserId] = msgs;
-  displayMessages();
 }
 
 function sendMessage(e) {
   e.preventDefault();
   
-  if (!selectedUser) return;
+  if (!selectedUser && !selectedGroup) return;
 
   const input = document.getElementById('message-input');
   const content = input.value.trim();
@@ -436,13 +597,27 @@ function sendMessage(e) {
   if (!content) return;
 
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: 'message',
-      to: selectedUser.userId,
-      content: content
-    }));
+    if (selectedGroup) {
+      ws.send(JSON.stringify({
+        type: 'group_message',
+        groupId: selectedGroup.groupId,
+        content: content
+      }));
+    } else {
+      ws.send(JSON.stringify({
+        type: 'message',
+        to: selectedUser.userId,
+        content: content
+      }));
+    }
 
     input.value = '';
+  }
+}
+
+function receiveGroupMessage(message, groupName) {
+  if (selectedGroup && selectedGroup.groupId === message.groupId) {
+    displayMessage(message);
   }
 }
 
@@ -469,21 +644,31 @@ function displayMessages() {
   const userMessages = messages[selectedUser.userId] || [];
 
   userMessages.forEach(msg => {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = msg.from === currentUser.userId ? 'message sent' : 'message received';
-
-    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    messageDiv.innerHTML = `
-      <div class="message-content">
-        <div>${msg.content}</div>
-        <div class="message-time">${time}</div>
-      </div>
-    `;
-
-    messagesArea.appendChild(messageDiv);
+    displayMessage(msg);
   });
+}
 
+function displayMessage(msg) {
+  const messagesArea = document.getElementById('messages-area');
+  const messageDiv = document.createElement('div');
+  messageDiv.className = msg.from === currentUser.userId ? 'message sent' : 'message received';
+
+  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  let senderInfo = '';
+  if (selectedGroup && msg.from !== currentUser.userId) {
+    senderInfo = `<div class="message-sender" style="font-size: 0.8em; color: #666; margin-bottom: 2px;">${msg.fromUsername || 'Unknown'}</div>`;
+  }
+
+  messageDiv.innerHTML = `
+    <div class="message-content">
+      ${senderInfo}
+      <div>${msg.content}</div>
+      <div class="message-time">${time}</div>
+    </div>
+  `;
+  
+  messagesArea.appendChild(messageDiv);
   messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 

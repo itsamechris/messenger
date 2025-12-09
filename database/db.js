@@ -5,6 +5,8 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 
+const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
+
 // Initialize database files
 async function initializeDatabase() {
   try {
@@ -25,6 +27,14 @@ async function initializeDatabase() {
     } catch {
       await fs.writeFile(MESSAGES_FILE, JSON.stringify([], null, 2));
       console.log('Created messages.json');
+    }
+
+    // Initialize groups file
+    try {
+      await fs.access(GROUPS_FILE);
+    } catch {
+      await fs.writeFile(GROUPS_FILE, JSON.stringify([], null, 2));
+      console.log('Created groups.json');
     }
 
     console.log('Database initialized successfully');
@@ -75,6 +85,63 @@ async function writeMessages(messages) {
   }
 }
 
+// Read groups
+async function readGroups() {
+  try {
+    const data = await fs.readFile(GROUPS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading groups:', error);
+    return [];
+  }
+}
+
+// Write groups
+async function writeGroups(groups) {
+  try {
+    await fs.writeFile(GROUPS_FILE, JSON.stringify(groups, null, 2));
+  } catch (error) {
+    console.error('Error writing groups:', error);
+    throw error;
+  }
+}
+
+// Create a new group
+async function createGroup(groupData) {
+  try {
+    const groups = await readGroups();
+    groups.push(groupData);
+    await writeGroups(groups);
+    return groupData;
+  } catch (error) {
+    console.error('Error creating group:', error);
+    throw error;
+  }
+}
+
+// Get groups for a user
+async function getGroupsForUser(userId) {
+  try {
+    const groups = await readGroups();
+    return groups.filter(group => group.members.includes(userId));
+  } catch (error) {
+    console.error('Error getting groups for user:', error);
+    return [];
+  }
+}
+
+// Get messages for a group
+async function getGroupMessages(groupId) {
+  try {
+    const allMessages = await readMessages();
+    return allMessages.filter(msg => msg.groupId === groupId)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  } catch (error) {
+    console.error('Error getting group messages:', error);
+    return [];
+  }
+}
+
 // Get messages between two users
 async function getMessagesBetweenUsers(userId1, userId2) {
   try {
@@ -109,5 +176,9 @@ module.exports = {
   readMessages,
   writeMessages,
   getMessagesBetweenUsers,
-  addMessage
+  addMessage,
+  createGroup,
+  getGroupsForUser,
+  getGroupMessages,
+  readGroups
 };
